@@ -1,0 +1,15 @@
+.dashboard-container {
+    display: flex;
+    flex-direction: column;
+    gap: 20px;
+}
+.emails-section {
+    display: grid;
+    grid-template-columns: 1fr 2fr; /* List on the left, detail on the right */
+    gap: 20px;
+    align-items: flex-start;
+}
+.error {
+    color: #e74c3c;
+    font-weight: bold;
+}
