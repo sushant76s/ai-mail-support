@@ -1,35 +1,12 @@
-import React, { useState, useEffect } from 'react';
-import axios from 'axios';
-// import EmailList from './EmailList';
-import EmailList from './EmailList';
-// import Stats from './Stats';
+import React, { useEffect, useMemo, useState } from 'react';
+import { Alert, Box, Grid, Snackbar, Stack, useMediaQuery, useTheme } from '@mui/material';
+import { api } from '../api';
+import type { Email, StatsData } from '../types';
 import Stats from './Stats';
-import './Dashboard.css';
+import EmailList from './EmailList';
+import EmailDetailDialog from './EmailDetailDialog';
 
-const API_URL = 'http://localhost:3001/api';
-
-export interface Email {
-  id: string;
-  sender: string;
-  subject: string;
-  body: string;
-  receivedAt: string;
-  sentiment: 'POSITIVE' | 'NEGATIVE' | 'NEUTRAL';
-  priority: 'URGENT' | 'NOT_URGENT';
-  extractedInfo: any;
-  draftResponse: string;
-  status: 'PENDING' | 'PROCESSED' | 'RESOLVED';
-}
-
-export interface StatsData {
-    total: number;
-    pending: number;
-    resolved: number;
-    last24Hours: number;
-    sentimentCounts: any[];
-    priorityCounts: any[];
-}
-
+const POLL_MS = 30000;
 
 const Dashboard: React.FC = () => {
   const [emails, setEmails] = useState<Email[]>([]);
@@ -37,43 +14,82 @@ const Dashboard: React.FC = () => {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [selectedEmail, setSelectedEmail] = useState<Email | null>(null);
+  const theme = useTheme();
+  const isMdUp = useMediaQuery(theme.breakpoints.up('md'));
+
+  const fetchData = async () => {
+    try {
+      setLoading(true);
+      const [emailsRes, statsRes] = await Promise.all([
+        api.get<Email[]>('/emails'),
+        api.get<StatsData>('/stats'),
+      ]);
+      setEmails(emailsRes.data);
+      setStats(statsRes.data);
+      setError(null);
+    } catch (e) {
+      setError('Failed to fetch data. Make sure the backend server is running.');
+      console.error(e);
+    } finally {
+      setLoading(false);
+    }
+  };
 
   useEffect(() => {
-    const fetchData = async () => {
-      try {
-        setLoading(true);
-        const [emailsRes, statsRes] = await Promise.all([
-          axios.get(`${API_URL}/emails`),
-          axios.get(`${API_URL}/stats`),
-        ]);
-        setEmails(emailsRes.data);
-        setStats(statsRes.data);
-        setError(null);
-      } catch (err) {
-        setError('Failed to fetch data. Make sure the backend server is running.');
-        console.error(err);
-      } finally {
-        setLoading(false);
-      }
-    };
-
     fetchData();
-    // Optional: Poll for new data every 30 seconds
-    const interval = setInterval(fetchData, 30000);
-    return () => clearInterval(interval);
+    const id = setInterval(fetchData, POLL_MS);
+    return () => clearInterval(id);
   }, []);
 
-  if (loading) return <p>Loading dashboard...</p>;
-  if (error) return <p className="error">{error}</p>;
+  const pendingCount = useMemo(() => {
+    return emails.filter(e => e.status !== 'RESOLVED').length;
+  }, [emails]);
 
   return (
-    <div className="dashboard-container">
-      {stats && <Stats data={stats} />}
-      <div className="emails-section">
-        <EmailList emails={emails} onSelectEmail={setSelectedEmail} selectedEmailId={selectedEmail?.id} />
-        {/* EmailDetail component will go here */}
-      </div>
-    </div>
+    <Box>
+      <Grid container spacing={3} alignItems="flex-start">
+        {/* LEFT: Stats (sticky on desktop) */}
+        <Grid size={{ xs: 12, md: 5, lg: 4 }}>
+          <Box sx={{ position: isMdUp ? 'sticky' : 'static', top: 16 }}>
+            <Stats
+              data={
+                stats ?? {
+                  total: emails.length,
+                  pending: pendingCount,
+                  resolved: emails.length - pendingCount,
+                  last24Hours: 0,
+                  sentimentCounts: [],
+                  priorityCounts: [],
+                }
+              }
+              loading={loading}
+            />
+          </Box>
+        </Grid>
+
+        {/* RIGHT: Email List */}
+        <Grid size={{ xs: 12, md: 7, lg: 8 }}>
+          <EmailList
+            emails={emails}
+            loading={loading}
+            onOpenEmail={setSelectedEmail}
+            selectedEmailId={selectedEmail?.id}
+          />
+        </Grid>
+      </Grid>
+
+      <EmailDetailDialog
+        email={selectedEmail}
+        open={Boolean(selectedEmail)}
+        onClose={() => setSelectedEmail(null)}
+      />
+
+      <Snackbar open={!!error} autoHideDuration={4000} onClose={() => setError(null)}>
+        <Alert severity="error" onClose={() => setError(null)} variant="filled">
+          {error}
+        </Alert>
+      </Snackbar>
+    </Box>
   );
 };
 
