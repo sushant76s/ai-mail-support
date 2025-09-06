@@ -1,15 +1,16 @@
 ---
-# AI Mail Support Assistant 🤖📧
+# AI Mail Support Assistant
 
 An intelligent, AI-powered communication assistant designed to streamline customer support operations. This tool automatically fetches, categorizes, prioritizes, and generates context-aware draft responses for support emails, significantly reducing manual workload and improving response times.
 
 ![Dashboard](https://img.shields.io/badge/Dashboard-React_MUI-informational) ![Backend](https://img.shields.io/badge/Backend-Node.js_Express-success) ![AI](https://img.shields.io/badge/AI-Google_Gemini-blueviolet) ![Database](https://img.shields.io/badge/Database-PostgreSQL_Prisma-ff69b4)
 ---
-## 🚀 Demo
+## Demo
 Watch the demo video here: [YouTube Link](https://youtu.be/oLf5fvMx5QU?si=LYU2TM-7s7t2QBM8)
-## Architecture & Approach: [Google Document](https://docs.google.com/document/d/1QpXLOwnWJX2g2P5WIMZiwsDxTczDGGLt1Y5RN-H3Xpg/edit?usp=sharing)
+## Architecture & Approach
+Documentation: [Google Document](https://docs.google.com/document/d/1QpXLOwnWJX2g2P5WIMZiwsDxTczDGGLt1Y5RN-H3Xpg/edit?usp=sharing)
 
-## ✨ Features
+## Features
 
 ### Core Functionality
 
@@ -32,7 +33,7 @@ Watch the demo video here: [YouTube Link](https://youtu.be/oLf5fvMx5QU?si=LYU2TM
   - Breakdown of emails by sentiment and priority.
 - **Search Functionality**: Quickly find emails by sender, subject, or body content.
 
-## 🛠️ Tech Stack
+## Tech Stack
 
 ### Backend
 
@@ -49,7 +50,7 @@ Watch the demo video here: [YouTube Link](https://youtu.be/oLf5fvMx5QU?si=LYU2TM
 - **HTTP Client**: Axios
 - **Charts**: Recharts
 
-## 📦 Project Structure
+## Project Structure
 
 ```
 ai-mail-support/
@@ -74,7 +75,7 @@ ai-mail-support/
 └── README.md
 ```
 
-## 🚀 Getting Started
+## Getting Started
 
 ### Prerequisites
 
@@ -153,7 +154,7 @@ cd ai-mail-support
     ```
     The client will start on `http://localhost:3000` and should automatically connect to the backend.
 
-## 🎯 How to Use
+## How to Use
 
 1.  **View the Dashboard:** Open your browser to `http://localhost:3000`. The dashboard will load with statistics and your inbox.
 2.  **Wait for Emails:** The server checks for new emails every 10 minutes. Send a test email to your configured Gmail address with a subject containing "Support", "Help", etc.
@@ -161,14 +162,14 @@ cd ai-mail-support
 4.  **View Details & Drafts:** Click on any email to open a detailed view. Here you can see the original email, the extracted information, and the AI-generated draft response.
 5.  **Copy Drafts:** Use the copy icon next to the draft response to copy it to your clipboard for use in your email client.
 
-## 🔧 API Endpoints
+## API Endpoints
 
 | Endpoint      | Method | Description                                                                            |
 | :------------ | :----- | :------------------------------------------------------------------------------------- |
 | `/api/emails` | GET    | Fetches all processed emails, sorted by priority (urgent first) and date.              |
 | `/api/stats`  | GET    | Returns dashboard statistics (total counts, sentiment/priority breakdown, 24h volume). |
 
-## 📋 Database Schema (Prisma)
+## Database Schema (Prisma)
 
 The application uses a PostgreSQL database with a single `Email` model storing all processed data.
 
@@ -190,7 +191,7 @@ model Email {
 }
 ```
 
-## 🧠 AI & Prompt Engineering
+## AI & Prompt Engineering
 
 The core intelligence is in `server/services/aiService.js`. It uses a carefully engineered prompt to instruct the Gemini model to:
 
@@ -198,7 +199,7 @@ The core intelligence is in `server/services/aiService.js`. It uses a carefully 
 2.  Extract structured information from unstructured text.
 3.  Generate a empathetic and professional draft response by grounding its knowledge in the provided `knowledgeBase` string (a simple RAG implementation).
 
-## 🚧 Potential Improvements & Future Work
+## Potential Improvements & Future Work
 
 - **Email Sending:** Integrate with SMTP or the Gmail API to send responses directly from the dashboard.
 - **Response Editing & Approval:** Allow users to edit and approve drafts before sending.
@@ -208,7 +209,7 @@ The core intelligence is in `server/services/aiService.js`. It uses a carefully 
 - **User Authentication:** Add login/logout functionality to support multiple agents.
 - **Advanced Analytics:** Add more detailed charts and time-series analysis for support performance.
 
-## 📝 License
+## License
 
 This project was created as part of a hackathon.
 
