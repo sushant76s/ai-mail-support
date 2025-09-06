@@ -7,6 +7,7 @@ An intelligent, AI-powered communication assistant designed to streamline custom
 ---
 ## 🚀 Demo
 Watch the demo video here: [YouTube Link](https://youtu.be/oLf5fvMx5QU?si=LYU2TM-7s7t2QBM8)
+## Architecture & Approach: [Google Document](https://docs.google.com/document/d/1QpXLOwnWJX2g2P5WIMZiwsDxTczDGGLt1Y5RN-H3Xpg/edit?usp=sharing)
 
 ## ✨ Features
 
