@@ -48,7 +48,7 @@ const Dashboard: React.FC = () => {
   return (
     <Box>
       <Grid container spacing={3} alignItems="flex-start">
-        {/* LEFT: Stats (sticky on desktop) */}
+        {/* LEFT: Stats */}
         <Grid size={{ xs: 12, md: 5, lg: 4 }}>
           <Box sx={{ position: isMdUp ? 'sticky' : 'static', top: 16 }}>
             <Stats

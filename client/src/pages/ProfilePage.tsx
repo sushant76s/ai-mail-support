@@ -43,7 +43,7 @@ const ProfilePage: React.FC = () => {
         if (data.imapUser) {
           formik.setValues({
             imapUser: data.imapUser,
-            imapPassword: '', // Don't pre-fill password
+            imapPassword: '',
             imapHost: data.imapHost,
             imapPort: data.imapPort,
           });

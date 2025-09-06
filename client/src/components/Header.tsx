@@ -20,7 +20,7 @@ import {
   useTheme,
 } from "@mui/material";
 import MenuIcon from "@mui/icons-material/Menu";
-import { useAuth } from "../context/AuthContext"; // Ensure this path is correct
+import { useAuth } from "../context/AuthContext";
 
 export default function Header() {
   const navigate = useNavigate();
