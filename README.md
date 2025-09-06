@@ -3,11 +3,10 @@
 
 An intelligent, AI-powered communication assistant designed to streamline customer support operations. This tool automatically fetches, categorizes, prioritizes, and generates context-aware draft responses for support emails, significantly reducing manual workload and improving response times.
 
-## 🚀 Demo
-Watch the demo video here: [YouTube Link](https://youtu.be/oLf5fvMx5QU?si=LYU2TM-7s7t2QBM8)
-
 ![Dashboard](https://img.shields.io/badge/Dashboard-React_MUI-informational) ![Backend](https://img.shields.io/badge/Backend-Node.js_Express-success) ![AI](https://img.shields.io/badge/AI-Google_Gemini-blueviolet) ![Database](https://img.shields.io/badge/Database-PostgreSQL_Prisma-ff69b4)
 ---
+## 🚀 Demo
+Watch the demo video here: [YouTube Link](https://youtu.be/oLf5fvMx5QU?si=LYU2TM-7s7t2QBM8)
 
 ## ✨ Features
 
