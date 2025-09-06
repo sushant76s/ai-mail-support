@@ -1,10 +1,7 @@
 import express from "express";
 import cors from "cors";
 import { PrismaClient } from "@prisma/client";
-import { startEmailFetchingService } from "./services/emailService.js";
-import authRoutes from "./routes/auth.js";
-import userRoutes from "./routes/user.js";
-import { authMiddleware } from "./middleware/auth.js";
+import { fetchAndProcessEmails } from "./services/emailService.js";
 
 const app = express();
 const prisma = new PrismaClient();
@@ -13,21 +10,17 @@ const PORT = process.env.PORT || 3001;
 app.use(cors());
 app.use(express.json());
 
-// --- Public API Routes ---
-app.use("/api/auth", authRoutes);
+// --- API Routes ---
 
-// --- Protected API Routes ---
-app.use("/api/user", userRoutes);
-
-// Get all processed emails for the LOGGED IN user
-app.get("/api/emails", authMiddleware, async (req, res) => {
+// Get all processed emails, urgent ones first
+app.get("/api/emails", async (req, res) => {
   try {
     const emails = await prisma.email.findMany({
-      where: {
-        userId: req.user.id,
-        status: "PROCESSED",
-      },
-      orderBy: [{ priority: "desc" }, { receivedAt: "desc" }],
+      where: { status: "PROCESSED" },
+      orderBy: [
+        { priority: "desc" }, // 'URGENT' comes before 'NOT_URGENT'
+        { receivedAt: "desc" },
+      ],
     });
     res.json(emails);
   } catch (error) {
@@ -35,35 +28,33 @@ app.get("/api/emails", authMiddleware, async (req, res) => {
   }
 });
 
-// Get dashboard statistics for the LOGGED IN user
-app.get("/api/stats", authMiddleware, async (req, res) => {
-  const userId = req.user.id;
+// Get dashboard statistics
+app.get("/api/stats", async (req, res) => {
   try {
-    const total = await prisma.email.count({ where: { userId } });
+    const total = await prisma.email.count();
+    const pending = await prisma.email.count({ where: { status: "PENDING" } });
     const resolved = await prisma.email.count({
-      where: { userId, status: "RESOLVED" },
+      where: { status: "RESOLVED" },
     });
 
     const twentyFourHoursAgo = new Date(Date.now() - 24 * 60 * 60 * 1000);
     const last24Hours = await prisma.email.count({
-      where: { userId, receivedAt: { gte: twentyFourHoursAgo } },
+      where: { receivedAt: { gte: twentyFourHoursAgo } },
     });
 
     const sentimentCounts = await prisma.email.groupBy({
       by: ["sentiment"],
-      where: { userId },
       _count: { sentiment: true },
     });
 
     const priorityCounts = await prisma.email.groupBy({
       by: ["priority"],
-      where: { userId },
       _count: { priority: true },
     });
 
     res.json({
       total,
-      pending: total - resolved,
+      pending,
       resolved,
       last24Hours,
       sentimentCounts,
@@ -74,8 +65,13 @@ app.get("/api/stats", authMiddleware, async (req, res) => {
   }
 });
 
-// Start the server and the email fetching service
+// Start the server
 app.listen(PORT, () => {
   console.log(`Server is running on http://localhost:${PORT}`);
-  startEmailFetchingService();
+
+  // Periodically fetch emails every 60 seconds
+  setInterval(fetchAndProcessEmails, 600000);
+
+  // Initial fetch on startup
+  fetchAndProcessEmails();
 });

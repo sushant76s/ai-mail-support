@@ -2,86 +2,65 @@ import imaps from "imap-simple";
 import { simpleParser } from "mailparser";
 import { PrismaClient } from "@prisma/client";
 import { processEmailWithAI } from "./aiService.js";
+import { decrypt } from "./cryptoService.js";
 
 const prisma = new PrismaClient();
 
-const imapConfig = {
-  imap: {
-    user: process.env.IMAP_USER,
-    password: process.env.IMAP_PASSWORD,
-    host: "imap.gmail.com",
-    port: 993,
-    tls: true,
-    authTimeout: 3000,
-    tlsOptions: { rejectUnauthorized: false },
-  },
-};
+export async function fetchEmailsForUser(user) {
+  const imapPassword = decrypt(user.imapPassword); // Decrypt the user's stored password
 
-export async function fetchAndProcessEmails() {
+  if (!user.imapUser || !imapPassword || !user.imapHost || !user.imapPort) {
+    console.log(
+      `Skipping email fetch for ${user.email}: IMAP credentials not configured.`
+    );
+    return;
+  }
+
+  const imapConfig = {
+    imap: {
+      user: user.imapUser,
+      password: imapPassword,
+      host: user.imapHost,
+      port: user.imapPort,
+      tls: true,
+      authTimeout: 5000,
+      tlsOptions: { rejectUnauthorized: false },
+    },
+  };
+
+  let connection;
   try {
-    console.log("Connecting to IMAP server...");
-    const connection = await imaps.connect(imapConfig);
+    console.log(`Connecting to IMAP for user ${user.email}...`);
+    connection = await imaps.connect(imapConfig);
     await connection.openBox("INBOX");
-    console.log("Connection successful. Searching for emails...");
 
     const keywords = ["support", "query", "request", "help"];
     const subjectQueries = keywords.map((keyword) => ["SUBJECT", keyword]);
-
-    if (subjectQueries.length === 0) {
-      console.log("No keywords defined for email search.");
-      connection.end();
-      return;
-    }
-
-    const combinedOrQuery =
-      subjectQueries.length > 1
-        ? subjectQueries.reduce((prev, curr) => ["OR", prev, curr])
-        : subjectQueries[0];
+    const combinedOrQuery = subjectQueries.reduce((prev, curr) => [
+      "OR",
+      prev,
+      curr,
+    ]);
 
     const searchCriteria = ["UNSEEN", combinedOrQuery];
-
-    // const fetchOptions = {
-    //   bodies: ["HEADER", "TEXT"],
-    //   markSeen: true,
-    // };
-
-    const fetchOptions = {
-      bodies: [""], // fetch the full raw message
-      markSeen: true,
-    };
-
+    const fetchOptions = { bodies: [""], markSeen: true };
     const messages = await connection.search(searchCriteria, fetchOptions);
-    console.log(`Found ${messages.length} matching emails.`);
-    console.log("messages: ", messages);
+    console.log(`Found ${messages.length} matching emails for ${user.email}.`);
 
     for (const item of messages) {
-      //   const all = item.parts.find((part) => part.which === "TEXT");
-      //   const emailContent = all.body;
-      //   const parsed = await simpleParser(emailContent);
+      const rawEmail = item.parts.find((part) => part.which === "").body;
+      if (!rawEmail) continue;
 
-      //   console.log("Parsed: ", parsed);
-
-      //   const messageId = parsed.messageId;
-
-      const all = item.parts.find((part) => part.which === "");
-      if (!all) continue;
-
-      const parsed = await simpleParser(all.body);
-      console.log("Parsed:", parsed);
-
+      const parsed = await simpleParser(rawEmail);
       const messageId = parsed.messageId;
 
-      // --- FIX STARTS HERE ---
-      // Add a guard clause to ensure the email has a Message-ID.
       if (!messageId) {
         console.warn(
           `Skipping email with subject "${parsed.subject}" because it has no Message-ID.`
         );
-        continue; // Skip to the next email in the loop
+        continue;
       }
-      // --- FIX ENDS HERE ---
 
-      // Check if email already exists (this code now only runs if messageId is valid)
       const existingEmail = await prisma.email.findUnique({
         where: { messageId },
       });
@@ -96,16 +75,13 @@ export async function fetchAndProcessEmails() {
         subject: parsed.subject,
         body: parsed.text || "",
         receivedAt: parsed.date,
+        userId: user.id,
       };
 
-      // 1. Save initial email to DB
       const newEmail = await prisma.email.create({ data: emailData });
-      console.log(`Saved new email: ${newEmail.subject}`);
+      console.log(`Saved new email for ${user.email}: ${newEmail.subject}`);
 
-      // 2. Process with AI
       const aiResult = await processEmailWithAI(newEmail);
-
-      // 3. Update email with AI analysis
       if (aiResult) {
         await prisma.email.update({
           where: { id: newEmail.id },
@@ -117,14 +93,35 @@ export async function fetchAndProcessEmails() {
             status: "PROCESSED",
           },
         });
-        console.log(
-          `Successfully processed and updated email: ${newEmail.subject}`
-        );
+        console.log(`Successfully processed email: ${newEmail.subject}`);
       }
     }
-
     connection.end();
   } catch (error) {
-    console.error("An error occurred during email fetching:", error);
+    console.error(
+      `An error occurred during email fetching for ${user.email}:`,
+      error
+    );
+    if (connection) connection.end();
   }
+}
+
+async function fetchForAllUsers() {
+  console.log("Starting periodic email fetch for all users...");
+  const users = await prisma.user.findMany({
+    where: {
+      imapPassword: { not: null }, // Only fetch for users who have provided credentials
+    },
+  });
+
+  console.log(`Found ${users.length} users with configured credentials.`);
+  for (const user of users) {
+    await fetchEmailsForUser(user);
+  }
+}
+
+// This function will be called by setInterval in the main server file
+export function startEmailFetchingService() {
+  setInterval(fetchForAllUsers, 600000); // Periodically fetch emails every 10 minutes (600000 ms)
+  fetchForAllUsers(); // Initial fetch on startup
 }

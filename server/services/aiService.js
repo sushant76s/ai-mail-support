@@ -3,11 +3,9 @@ import dotenv from "dotenv";
 
 dotenv.config();
 
-// 1. Initialize the Google Gemini AI Client
 const ai = new GoogleGenAI({ apiKey: process.env.GEMINI_API_KEY });
 
-// --- Simulated Knowledge Base (For RAG) ---
-// This part remains unchanged.
+// --- Knowledge Base (For RAG) ---
 const knowledgeBase = `
 1. Refund Policy: Customers can request a refund within 14 days of purchase. They need to provide their order ID.
 2. Password Reset: Users can reset their password by visiting /password-reset. If they can't access their email, they must contact security@example.com.
@@ -18,17 +16,6 @@ const knowledgeBase = `
 
 export async function processEmailWithAI(email) {
   const { sender, subject, body } = email;
-
-  // 2. Select the Gemini model and configure it for JSON output
-  //   const model = genAI.getGenerativeModel({
-  //     model: "gemini-1.5-flash", // A powerful and efficient model
-  //     generationConfig: {
-  //       responseMimeType: "application/json",
-  //     },
-  //   });
-
-  // 3. The prompt is slightly adjusted for clarity but serves the same purpose.
-  // Gemini models are excellent at following structured instructions.
   const prompt = `
     You are an expert customer support agent assistant. Your task is to analyze an incoming email and provide a structured JSON output.
     You must adhere to the following rules:
@@ -59,9 +46,8 @@ export async function processEmailWithAI(email) {
   `;
 
   try {
-    // 4. Call the Gemini API and parse the response
     const result = await ai.models.generateContent({
-      model: "gemini-2.5-flash", // or whichever model you prefer
+      model: "gemini-2.5-flash",
       contents: [{ role: "user", parts: [{ text: prompt }] }],
     });
 

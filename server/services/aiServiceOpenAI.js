@@ -7,8 +7,7 @@ const openai = new OpenAI({
   apiKey: process.env.OPENAI_API_KEY,
 });
 
-// --- Simulated Knowledge Base (For RAG) ---
-// In a real app, you'd fetch this from a vector database based on email content.
+// --- Knowledge Base (For RAG) ---
 const knowledgeBase = `
 1. Refund Policy: Customers can request a refund within 14 days of purchase. They need to provide their order ID.
 2. Password Reset: Users can reset their password by visiting /password-reset. If they can't access their email, they must contact security@example.com.
@@ -55,7 +54,7 @@ export async function processEmailWithAI(email) {
 
   try {
     const response = await openai.chat.completions.create({
-      model: "gpt-4o", // Or gpt-3.5-turbo for faster, cheaper responses
+      model: "gpt-4o",
       response_format: { type: "json_object" },
       messages: [
         { role: "system", content: systemPrompt },
